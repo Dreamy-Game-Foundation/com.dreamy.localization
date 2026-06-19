@@ -15,6 +15,17 @@
 /[Uu]ser[Ss]ettings/
 *.log
 
+# Local Unity fixture used to compile and test this UPM package.
+/TestProject~/Library/
+/TestProject~/Logs/
+/TestProject~/Temp/
+/TestProject~/UserSettings/
+/TestProject~/*.csproj
+/TestProject~/*.sln
+/TestProject~/editmode-results.xml
+/TestProject~/ProjectSettings/*
+!/TestProject~/ProjectSettings/ProjectVersion.txt
+
 # By default unity supports Blender asset imports, *.blend1 blender files do not need to be commited to version control.
 *.blend1
 *.blend1.meta

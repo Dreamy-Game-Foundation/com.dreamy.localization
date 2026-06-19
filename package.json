@@ -1,0 +1,28 @@
+{
+  "name": "com.dreamy.localization",
+  "version": "0.1.0",
+  "displayName": "Dreamy Localization",
+  "description": "CSV-first localization tooling and runtime bindings for DreamyBase projects.",
+  "unity": "6000.0",
+  "dependencies": {
+    "com.unity.localization": "1.5.5",
+    "com.unity.textmeshpro": "5.0.0",
+    "com.unity.ugui": "2.0.0",
+    "com.unity.modules.audio": "1.0.0"
+  },
+  "keywords": [
+    "localization",
+    "csv",
+    "dreamy"
+  ],
+  "author": {
+    "name": "Dreamy"
+  },
+  "samples": [
+    {
+      "displayName": "Basic Localization",
+      "description": "Basic locale selection and text binding examples.",
+      "path": "Samples~/Basic Localization"
+    }
+  ]
+}

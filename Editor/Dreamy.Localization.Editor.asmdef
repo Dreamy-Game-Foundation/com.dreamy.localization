@@ -1,0 +1,20 @@
+{
+  "name": "Dreamy.Localization.Editor",
+  "rootNamespace": "Dreamy.Localization.Editor",
+  "references": [
+    "Dreamy.Localization.Runtime",
+    "Unity.Localization",
+    "Unity.Localization.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

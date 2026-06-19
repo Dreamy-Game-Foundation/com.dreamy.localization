@@ -1,0 +1,24 @@
+{
+  "name": "Dreamy.Localization.Tests.EditMode",
+  "rootNamespace": "Dreamy.Localization.Tests",
+  "references": [
+    "Dreamy.Localization.Runtime",
+    "Dreamy.Localization.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

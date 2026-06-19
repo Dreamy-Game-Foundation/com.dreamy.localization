@@ -1,0 +1,20 @@
+{
+  "name": "Dreamy.Localization.Runtime.UI",
+  "rootNamespace": "Dreamy.Localization.UI",
+  "references": [
+    "Dreamy.Localization.Runtime",
+    "Unity.Localization",
+    "Unity.ResourceManager",
+    "Unity.TextMeshPro",
+    "Unity.ugui"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

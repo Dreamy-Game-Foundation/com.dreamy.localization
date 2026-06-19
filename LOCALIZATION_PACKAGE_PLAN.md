@@ -9,9 +9,19 @@
 | Unity baseline | Unity 6 |
 | Data source | CSV-first |
 | Localization engine | Unity Localization package |
-| Planned Unity Localization line | `1.5.x`, verify and pin the latest Unity 6-compatible patch during Phase 0 |
+| Verified Unity Localization version | `1.5.5` on Unity `6000.0.58f2` |
 | Plan status | Ready for implementation |
-| Reference repository | [tranvietanh0/UnityLocalization](https://github.com/tranvietanh0/UnityLocalization) |
+| References | [tranvietanh0/UnityLocalization](https://github.com/tranvietanh0/UnityLocalization), [Lean Localization 2.1.1](https://carloswilkes.com/Documentation/LeanLocalization) |
+
+### Implementation progress
+
+| Phase | Status | Current result |
+|---|---|---|
+| Phase 0 | In progress | UPM scaffold compiles on Unity `6000.0.58f2`; package validation suite remains |
+| Phase 1 | In progress | Typed keys, profile, locale persistence/matching, async service, facade, and bootstrap implemented |
+| Phase 2 | In progress | TMP, UGUI, string event, image, sprite renderer, and audio bindings implemented |
+| Phase 3 | In progress | CSV parser/writer, schema model, validation rules, and EditMode tests implemented |
+| Phases 4-8 | Pending | Import/export apply workflow, editor window, scanner, CLI, hardening, and release |
 
 ## 2. Objective
 
@@ -28,7 +38,7 @@ The package must provide:
 
 ## 3. Reference Repository Assessment
 
-The reference repository provides a useful minimum implementation:
+The UnityLocalization reference repository provides a useful minimum implementation:
 
 - CSV parser and schema validation.
 - CSV import into Unity String Table Collections.
@@ -56,6 +66,37 @@ The Dreamy package should reuse the concepts, not copy the constraints.
 | Tests | Parser-focused | Runtime, editor integration, import idempotency, asset mapping, locale switching, PlayMode |
 | Package quality | Minimal package metadata | Samples, documentation, changelog, licenses, API docs, package validation |
 
+### Lean Localization assessment
+
+Lean Localization is not based on Unity Localization, but it demonstrates several useful usability patterns:
+
+- A component-first workflow where changing language refreshes all active localization handlers.
+- Simple static lookup methods with explicit fallback values.
+- A reusable localized-behavior base class and handler interface for custom components.
+- Inspector pickers for languages and translation keys.
+- Slash-delimited phrase grouping to keep large key sets navigable.
+- Culture aliases for mapping values such as `en-US` and `en-GB` to one language.
+- Persistent language selection.
+- Reactive global and GameObject-local tokens.
+- Configurable immediate, lazy, and unloadable translation loading.
+- Built-in bindings for dropdowns, images, sprite renderers, render materials, audio, legacy text, TMP text, and localized fonts.
+
+Dreamy should adopt these UX concepts while continuing to use Unity Localization tables, Smart Strings, variables, locale selectors, and Addressables. It must not introduce a second scene/prefab phrase database or an untyped `object` translation registry.
+
+| Lean concept | Dreamy adaptation |
+|---|---|
+| `LeanLocalizedBehaviour` | Typed `LocalizedBinding<T>` lifecycle base plus public `ILocalizationBinding` interface |
+| Translation name picker | Searchable table/key property drawer with hierarchical key grouping |
+| Slash path grouping | Support both slash and dot display grouping without changing the stored key |
+| Global token | Named Smart String global variable provider |
+| Local token | Component-local Smart String argument provider resolved from the binding hierarchy |
+| Culture list | Locale alias and culture matching rules in the project profile |
+| Save/load current language | Injectable locale preference store |
+| Immediate/lazy/unload cache modes | Table preload and release policies mapped to Unity Localization/Addressables |
+| Static text/object lookup with fallback | Typed facade methods accepting explicit fallback and structured failure policy |
+| Localized dropdown | Option-list binding for `Dropdown` and `TMP_Dropdown` |
+| Localized renderer/font components | Typed bindings for `SpriteRenderer`, `Renderer` material, legacy/TMP fonts, and font assets |
+
 ## 4. Scope
 
 ### 4.1 Required runtime capabilities
@@ -69,10 +110,16 @@ The Dreamy package should reuse the concepts, not copy the constraints.
 - Resolve localized strings synchronously only when Unity has already loaded the required data.
 - Resolve localized strings asynchronously as the default safe API.
 - Pass positional or named Smart String arguments.
+- Register reactive global variables and binding-local variables for Smart Strings.
+- Refresh only bindings affected when a reactive variable changes.
 - Support plural, select, conditional, list, date, number, currency, and custom Smart String formatters provided by Unity Localization.
+- Resolve locale aliases and culture variants such as `en-US` to configured supported locales.
+- Apply configurable table loading policies: preload, load on first use, and release when no longer retained.
 - Bind localized strings to:
   - `TMP_Text`.
   - `UnityEngine.UI.Text`.
+  - `TMP_Dropdown` option lists.
+  - `UnityEngine.UI.Dropdown` option lists.
   - `UnityEvent<string>`.
   - A runtime callback or interface for custom UI.
 - Bind localized assets to:
@@ -82,7 +129,10 @@ The Dreamy package should reuse the concepts, not copy the constraints.
   - `AudioClip`.
   - `Font`.
   - `TMP_FontAsset`.
+  - `Material`.
+  - `GameObject` or prefab references.
   - Generic `UnityEngine.Object` assets through `LocalizedAsset<T>`.
+- Apply localized assets directly to `Image`, `RawImage`, `SpriteRenderer`, `Renderer`, `AudioSource`, and supported font targets.
 - Refresh active bindings when the locale changes.
 - Avoid event leaks when components are disabled, destroyed, or reconfigured.
 - Expose loading/failure state without silently swallowing missing-table or missing-entry failures.
@@ -101,6 +151,8 @@ The Dreamy package should reuse the concepts, not copy the constraints.
 - Detect missing references, duplicate keys, invalid locale columns, missing translations, orphaned entries, and likely hardcoded UI text.
 - Validate Smart String syntax and representative argument contracts.
 - Validate asset GUID/path/type mappings.
+- Provide searchable locale and table/key property drawers with hierarchical grouping.
+- Preview a selected locale in Edit Mode without changing the persisted player preference.
 - Produce human-readable and JSON validation reports.
 - Run all validation from Unity batchmode.
 
@@ -162,15 +214,24 @@ com.dreamy.localization/
 │   ├── Locale/
 │   ├── Services/
 │   ├── Strings/
-│   └── Assets/
+│   ├── Assets/
+│   ├── Variables/
+│   └── Loading/
 ├── Runtime.UI/
 │   ├── Dreamy.Localization.Runtime.UI.asmdef
+│   ├── LocalizedBinding.cs
 │   ├── LocalizedTmpText.cs
 │   ├── LocalizedUguiText.cs
+│   ├── LocalizedTmpDropdown.cs
+│   ├── LocalizedUguiDropdown.cs
 │   ├── LocalizedStringEvent.cs
 │   ├── LocalizedImage.cs
 │   ├── LocalizedRawImage.cs
+│   ├── LocalizedSpriteRenderer.cs
+│   ├── LocalizedRendererMaterial.cs
 │   ├── LocalizedAudioSource.cs
+│   ├── LocalizedTmpFont.cs
+│   ├── LocalizedUguiFont.cs
 │   └── LocalizedAssetEvent.cs
 ├── Editor/
 │   ├── Dreamy.Localization.Editor.asmdef
@@ -222,6 +283,32 @@ The exact public async abstraction must be decided in Phase 1 after testing Unit
 - `LocaleIdentifier`: stable locale code abstraction or direct use of Unity's identifier if it remains serialization-safe.
 - `LocalizationResult<T>`: optional structured result for non-component APIs, containing value, requested locale, resolved locale, and failure code.
 - `LocalizationError`: stable error codes for missing table, entry, locale, invalid Smart String, load failure, and cancellation.
+- `LocalizationFallback<T>`: optional binding-level fallback value used only after configured locale and table fallback resolution fails.
+
+#### Binding extension model
+
+- `ILocalizationBinding` exposes refresh and lifecycle state without requiring inheritance.
+- `LocalizedBinding<TValue>` owns subscription, stale-request rejection, fallback, and target application flow.
+- Concrete components only resolve their typed value and apply it to a target.
+- Custom game components can implement the interface directly or derive from the base class.
+- All bindings expose a manual `Refresh()` method for inspector events and exceptional runtime workflows.
+- Key selectors use table plus entry identity, never an unqualified global phrase string.
+
+#### Variables and tokens
+
+- Global runtime variables are registered by stable name and exposed to Unity Smart Strings.
+- Local variables are resolved from a binding-local provider on the same GameObject or parent hierarchy.
+- Variable changes trigger affected Smart String refreshes.
+- Built-in providers cover string, integer, floating-point, boolean, Unity object, and custom source adapters.
+- Token syntax is the Unity Smart String syntax; a separate replacement grammar must not be created.
+
+#### Loading policy
+
+- `Preload`: load configured tables during initialization.
+- `OnDemand`: load a table when first requested and retain it.
+- `Retained`: load on demand and retain while one or more registered consumers require it.
+- `ReleaseWhenUnused`: release eligible table handles after the last consumer unregisters.
+- Loading behavior must use Unity Localization and Addressables handles rather than maintaining duplicate translated values.
 
 #### Service lifecycle
 
@@ -233,11 +320,13 @@ The exact public async abstraction must be decided in Phase 1 after testing Unit
    - Unity startup selector result.
    - Configured default locale.
    - First available locale.
-4. Apply locale and await completion.
-5. Raise one initialization event.
-6. On locale selection, serialize concurrent requests so the last valid request wins.
-7. Persist only after a successful switch.
-8. Raise `LocaleChanged` after selected locale and required preloads are ready.
+4. Match device culture through exact locale code, configured aliases, parent culture, then language code.
+5. Apply locale and await completion.
+6. Load tables configured for preload.
+7. Raise one initialization event.
+8. On locale selection, serialize concurrent requests so the last valid request wins.
+9. Persist only after a successful switch.
+10. Raise `LocaleChanged` after selected locale and required preloads are ready.
 
 #### Dependency injection
 
@@ -259,6 +348,7 @@ Suggested fields:
 - Schema version.
 - Default locale code.
 - Supported locale definitions.
+- Culture aliases and matching priority.
 - Fallback locale code.
 - Locale selection policy.
 - Persisted preference key.
@@ -271,6 +361,9 @@ Suggested fields:
 - Missing translation policy.
 - Orphan handling policy.
 - Preload table configuration.
+- Per-table load and release policy.
+- Global Smart Variable provider definitions.
+- Key display grouping separator preferences.
 - Scan include/exclude paths.
 - Validation severity overrides.
 - Pseudo-locale settings.
@@ -437,6 +530,10 @@ Only a valid plan can be applied.
 - Missing table/key referenced by a component.
 - Binding component with no target.
 - Invalid Smart String argument binding.
+- Duplicate or shadowed global/local variable names.
+- Dropdown option key count mismatch.
+- Binding fallback type mismatch.
+- Unsupported locale alias or ambiguous culture mapping.
 
 ### 7.3 Suppression
 
@@ -470,6 +567,8 @@ Create `Tools/Dreamy/Localization`.
 - Create missing locales and collections.
 - Configure default/fallback locale.
 - Create pseudo-locale.
+- Configure culture aliases and table loading policies.
+- Preview locale in Edit Mode.
 
 #### Import/Export
 
@@ -479,6 +578,7 @@ Create `Tools/Dreamy/Localization`.
 - Filter add/update/remove/error rows.
 - Apply valid plan.
 - Export selected or all tables.
+- Search and copy table/key references using grouped key navigation.
 
 #### Scan
 
@@ -584,6 +684,9 @@ CI output must include stable rule codes and a JSON report. Avoid relying only o
 - Implement initialization state machine.
 - Implement locale discovery, selection, persistence, fallback, and events.
 - Implement string and generic asset resolution.
+- Implement culture alias matching.
+- Implement table loading and release policies.
+- Implement reactive global and binding-local Smart Variable providers.
 - Add structured errors and logging hooks.
 - Add static facade and optional bootstrap component.
 - Define behavior for concurrent locale changes and repeated initialization.
@@ -594,6 +697,7 @@ CI output must include stable rule codes and a JSON report. Avoid relying only o
 - Locale selection service.
 - String and asset lookup.
 - Preference store abstraction with PlayerPrefs default.
+- Variable registry and table loading policy service.
 
 ### Acceptance criteria
 
@@ -602,6 +706,9 @@ CI output must include stable rule codes and a JSON report. Avoid relying only o
 - Invalid locale selection returns a defined failure and does not corrupt current state.
 - Two rapid locale requests produce deterministic final state.
 - Missing keys produce logged, testable failures according to policy.
+- Culture aliases select the expected supported locale.
+- A reactive variable update refreshes dependent Smart Strings without a locale change.
+- Release-eligible tables are not released while a registered binding still uses them.
 
 ### Risk assessment
 
@@ -610,6 +717,7 @@ CI output must include stable rule codes and a JSON report. Avoid relying only o
 | Async API leaks Unity implementation details excessively | 3 | 4 | 12 | Prototype both direct handle and wrapper approaches before freezing API |
 | Locale race conditions leave mixed-language UI | 3 | 5 | 15 | Serialize switches and add PlayMode concurrency tests before continuing |
 | Static facade creates duplicate service state | 2 | 5 | 10 | Make facade a thin delegate to one configured service |
+| Aggressive table release causes missing or repeated loads | 3 | 4 | 12 | Default to retained loading and require measured opt-in for release policies |
 
 ### Effort
 
@@ -622,10 +730,14 @@ CI output must include stable rule codes and a JSON report. Avoid relying only o
 ### Work
 
 - Implement TMP and UGUI text components.
+- Implement TMP and UGUI dropdown option bindings.
 - Implement generic string event binding.
-- Implement Image, RawImage, AudioSource, and generic asset event bindings.
+- Implement Image, RawImage, SpriteRenderer, Renderer material, AudioSource, font, and generic asset event bindings.
+- Implement the typed binding base class and public custom binding interface.
 - Support serialized table/key references and runtime reassignment.
+- Add searchable, grouped table/key property drawers.
 - Support Smart String arguments and refresh.
+- Support explicit typed fallback values per binding.
 - Handle enable, disable, destroy, and locale-change lifecycles.
 - Ensure built-in Unity localization components remain usable alongside Dreamy components.
 
@@ -641,7 +753,11 @@ CI output must include stable rule codes and a JSON report. Avoid relying only o
 - Disabled components do not receive updates.
 - Re-enabled components show current locale content.
 - Runtime key reassignment unsubscribes old references.
+- Custom bindings can reuse the standard lifecycle without copying subscription logic.
+- Dropdown options update in place without duplicating option entries.
 - Sprite, texture, and audio localization work through Asset Tables.
+- SpriteRenderer, material, and legacy/TMP font bindings apply the correct typed assets.
+- Property drawers remain usable with thousands of grouped keys.
 - No retained event subscriptions after scene unload.
 
 ### Risk assessment
@@ -651,6 +767,7 @@ CI output must include stable rule codes and a JSON report. Avoid relying only o
 | Event subscription leaks | 3 | 5 | 15 | Centralize binding lifecycle and add enable/disable/destroy tests |
 | Asset updates complete out of order | 3 | 4 | 12 | Track request version and discard stale callbacks |
 | Duplicate functionality diverges from Unity components | 2 | 4 | 8 | Use adapters and document when native components are preferable |
+| Key picker becomes slow on large table sets | 3 | 3 | 9 | Cache searchable indexes and invalidate them only when table metadata changes |
 
 ### Effort
 
@@ -755,6 +872,8 @@ CI output must include stable rule codes and a JSON report. Avoid relying only o
 - Implement setup status and repair actions.
 - Implement import diff visualization.
 - Implement scene and prefab scanning for TMP, UGUI, and Dreamy/native localization bindings.
+- Add searchable locale and table/key selectors shared by all inspectors.
+- Add temporary Edit Mode locale preview with a clear restore action.
 - Implement serialized field scanning through configurable markers.
 - Implement conservative source-code findings.
 - Implement suppressions and report navigation.
@@ -771,6 +890,8 @@ CI output must include stable rule codes and a JSON report. Avoid relying only o
 - Scanner finds known fixture violations with stable rule IDs.
 - Excluded paths and explicit suppressions are respected.
 - Results can ping assets and identify component hierarchy paths.
+- Locale preview never changes the saved runtime locale preference.
+- Grouped key search handles dot and slash naming conventions.
 - Source scan findings are warnings unless a high-confidence rule applies.
 - No automatic prefab or source edits occur during scan.
 
@@ -781,6 +902,7 @@ CI output must include stable rule codes and a JSON report. Avoid relying only o
 | Regex source scan produces excessive false positives | 4 | 3 | 12 | Limit to configured APIs/paths, classify confidence, and support suppressions |
 | Large projects scan too slowly | 4 | 4 | 16 | Cache asset hashes, support scoped scans, show progress, and make full scan a CI task |
 | Editor UI becomes tightly coupled to import logic | 3 | 3 | 9 | UI consumes immutable plans and reports from editor services |
+| Edit Mode preview leaves assets or scene objects dirty | 3 | 4 | 12 | Treat preview as transient state and restore values on disable/domain reload |
 
 ### Effort
 
@@ -836,6 +958,7 @@ CI output must include stable rule codes and a JSON report. Avoid relying only o
 - Complete EditMode unit and integration tests.
 - Complete PlayMode locale and binding tests.
 - Build test fixtures for strings, Smart Strings, plurals, assets, missing values, and migrations.
+- Add fixtures for global/local variables, culture aliases, dropdowns, fonts, materials, fallback values, and table loading policies.
 - Measure import and scan behavior on representative DreamyBase project sizes.
 - Add allocation and repeated-refresh checks for runtime bindings.
 - Add domain reload and scene transition tests.
@@ -851,7 +974,11 @@ CI output must include stable rule codes and a JSON report. Avoid relying only o
 | Asset table import | Required | Load and switch locale |
 | Locale persistence | Unit test abstraction | Required |
 | TMP/UGUI updates | Serialization checks | Required |
+| Dropdown option updates | Serialization checks | Required |
 | Smart String/plural | Syntax and contract | Required |
+| Global/local variables | Registry tests | Required |
+| Culture alias matching | Required | Required |
+| Table loading/release | Policy tests | Required |
 | Concurrent locale changes | Limited | Required |
 | Event cleanup | Limited | Required |
 | Scanner | Fixture-based | Not needed |
@@ -864,6 +991,7 @@ CI output must include stable rule codes and a JSON report. Avoid relying only o
 - Import handles a representative large CSV without per-row asset refresh.
 - Full scan has measured performance and documented scope recommendations.
 - No known event leaks or stale async updates remain.
+- On-demand loading and release policies have measured load-count and memory behavior.
 
 ### Risk assessment
 
@@ -886,6 +1014,7 @@ CI output must include stable rule codes and a JSON report. Avoid relying only o
 - Write installation and quick-start documentation.
 - Document both CSV schemas and policies.
 - Document runtime API and component workflows.
+- Document custom binding creation, variables, culture aliases, loading policies, and grouped key conventions.
 - Add four focused samples.
 - Document CI integration.
 - Add migration guide from direct Unity Localization usage and from the reference package style.
@@ -949,6 +1078,7 @@ The package is complete when:
 - Import is idempotent and blocks unsafe writes.
 - Locale selection is async-safe, persistent, and testable.
 - TMP, UGUI, Smart Strings, plurals, and localized assets work in PlayMode.
+- Dropdowns, fonts, materials, SpriteRenderer bindings, reactive variables, and culture aliases work in PlayMode.
 - Scanner and validators produce stable actionable findings.
 - Batchmode validation returns documented exit codes and JSON reports.
 - EditMode and PlayMode suites pass in CI.
@@ -965,6 +1095,9 @@ The package is complete when:
 - Do not make runtime assemblies reference editor assemblies.
 - Do not perform blocking waits on localization or Addressables handles in gameplay code.
 - Do not silently fall back without reporting requested and resolved locale.
+- Do not introduce a second token formatting grammar beside Unity Smart Strings.
+- Do not maintain a separate scene or prefab phrase registry parallel to Unity tables.
+- Do not expose untyped `object` values when a generic typed asset API is possible.
 - Do not delete orphaned entries by default.
 - Do not auto-edit source code or prefabs from scanner results.
 - Do not release `1.0.0` before a real DreamyBase pilot.

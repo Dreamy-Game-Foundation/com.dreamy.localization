@@ -1,0 +1,22 @@
+{
+  "name": "Dreamy.Localization.Tests.PlayMode",
+  "rootNamespace": "Dreamy.Localization.Tests",
+  "references": [
+    "Dreamy.Localization.Runtime",
+    "Dreamy.Localization.Runtime.UI"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}
